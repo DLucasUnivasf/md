@@ -1,0 +1,505 @@
+#Analisa como se comportam as categorias principais de produto
+categorias = items_modificado %>% 
+       group_by(mainCategory) %>% 
+       summarize(quantidade = n(),principalSubCatg = getmode(category)) 
+
+#Verificando se é possivel tirar alguma conclusão com a categoria principal
+exemplo = filter(items_modificado, mainCategory == 1)
+exemplo = select(exemplo, mainCategory, size)
+
+#Analisar quem são as categorias de produtos e quanto elas representam do total
+(table(filter(items_modificado,mainCategory == 1)$category)/12824)*100
+(table(filter(items_modificado,mainCategory == 9)$category)/12824)*100
+(table(filter(items_modificado,mainCategory == 15)$category)/12824)*100
+
+#categorias tabeladas
+categorias = items_modificado %>% 
+  group_by(category) %>% 
+  summarize(quantidade = n()) %>% 
+  arrange(quantidade)
+
+#Exibindo a quantidade de itens por cada tipo de tamanho
+df_items_size_visualizacao = items_modificado %>%
+  group_by(size) %>%
+  summarise(quantidade = n()) %>%
+  arrange(quantidade)
+
+#Cacula Moda
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+#Exibindo a quantidade de itens com a moda
+df_items_size_visualizacao = items_modificado %>% 
+  group_by (size) %>%
+  summarise(quantidade = n(), modaCategoria = getmode(category)) %>%
+  arrange (quantidade)
+
+# Analisando os tamanhos associados com cada categoria para definir uma estrategia de mapeamento
+exemplo = filter(items_modificado,category == 10) %>% 
+  select(size,brand,subCategory) %>% 
+  group_by(size) %>% 
+  summarise(quant = n())
+
+# Para construir a tab
+exemplo = filter(items_modificado,category == 18) %>% 
+  select(size,category,subCategory) %>%
+  group_by(size,category) %>% 
+  summarise(quant = n())
+
+# Grafico de linhas simples para entender a distribuição dos tamanhos no estoque de uma categoria
+exemplo = filter(items_modificado,category == 18) %>% 
+  select(size,subCategory,brand) %>%
+  group_by(size) %>% summarise(quant = n())
+plot(exemplo$size,exemplo$quant,type='n',xlab = "tamanho",ylab = "quantidade")
+lines(exemplo$size,exemplo$quant)
+
+
+#Substituindo os dados
+#muito cuidado para não deixar o intervalo do XXL aberto, senão ele substituira os 
+#itens mapaeados anteriormente. Verifique a tabela ASCII.
+#Categoria 2
+items_modificado$size[items_modificado$size < 39  & 
+                        items_modificado$category == 2] = "XS"
+
+items_modificado$size[items_modificado$size >= 39 & 
+                        items_modificado$size < 42  & 
+                        items_modificado$category == 2] = "S"
+
+items_modificado$size[items_modificado$size >= 42 & 
+                        items_modificado$size <= 45 & 
+                        items_modificado$category == 2] = "M"
+
+items_modificado$size[items_modificado$size > 45  & 
+                        items_modificado$size <= 46 & 
+                        items_modificado$category == 2] = "L"
+
+items_modificado$size[items_modificado$size > 46  & 
+                        items_modificado$size <= 47 &
+                        items_modificado$category == 2] = "XL"
+
+items_modificado$size[items_modificado$size > 47  & 
+                        items_modificado$size <= 49 & 
+                        items_modificado$category == 2] = "XXL"
+
+#Categoria 7
+items_modificado$size[items_modificado$size == "0 ( 31-33 )"| 
+                        items_modificado$size == "00 ( 27-30 )"|
+                        items_modificado$size =="1 ( 25-30 )"|
+                        items_modificado$size =="1 ( 31-34 )"|
+                        items_modificado$size =="1 ( 33-36 )"|
+                        items_modificado$size =="1 ( 34-36 )"|
+                        items_modificado$size =="102 (M)"|
+                        items_modificado$size =="104"|
+                        items_modificado$size =="11"|
+                        items_modificado$size =="116"|
+                        items_modificado$size =="116-122"|
+                        items_modificado$size =="2"|
+                        items_modificado$size =="34"|
+                        items_modificado$size =="36"|
+                        items_modificado$size =="38"|
+                        items_modificado$size =="6/8 (116-128)"|
+                        items_modificado$size =="XS"|
+                        items_modificado$size =="XS ( 116-128 )"|
+                        items_modificado$size =="XS ( 30-34 )"|
+                        items_modificado$size =="XS ( 32 )"|
+                        items_modificado$size =="XS ( 32/34 )"&
+                        items_modificado$category == 7] = "XS"
+
+items_modificado$size[items_modificado$size =="0 ( 128 )"|
+                        items_modificado$size =="0 ( Bambini )"|
+                        items_modificado$size =="128"|
+                        items_modificado$size =="134"|
+                        items_modificado$size =="2 ( 31-34 )"|
+                        items_modificado$size =="2 ( 35-38 )"|
+                        items_modificado$size =="2 ( 37-39 )"|
+                        items_modificado$size =="2 ( 37-40 )"|
+                        items_modificado$size =="3"|
+                        items_modificado$size =="37 - 40"|
+                        items_modificado$size =="40"|
+                        items_modificado$size =="S"|
+                        items_modificado$size =="S ( 128-140 )"|
+                        items_modificado$size =="S ( 34-38 )"|
+                        items_modificado$size =="S ( 34/36 )"&
+                        items_modificado$category == 7] = "S"
+
+
+items_modificado$size[items_modificado$size =="01 Junior"|
+                        items_modificado$size =="1 ( 140 )"|
+                        items_modificado$size =="1 ( Junior)"|
+                        items_modificado$size=="10"|
+                        items_modificado$size=="10 (140)"|
+                        items_modificado$size=="10/12 (140-152)"|
+                        items_modificado$size=="140"|
+                        items_modificado$size=="146"|
+                        items_modificado$size=="19 (38)"|
+                        items_modificado$size=="24 (M)"|
+                        items_modificado$size=="3 ( 39-42 )"|
+                        items_modificado$size=="3 ( 40-42 )"|
+                        items_modificado$size=="3 ( 41-43 )"|
+                        items_modificado$size=="3 (35-38 )"|
+                        items_modificado$size=="38/40 ( M / L )"|
+                        items_modificado$size=="39-42"|
+                        items_modificado$size=="4"|
+                        items_modificado$size=="42"|
+                        items_modificado$size=="44"|
+                        items_modificado$size=="M"|
+                        items_modificado$size=="M ( 140-152 )"|
+                        items_modificado$size=="M ( 38-42 )"|
+                        items_modificado$size=="M ( 38/40 )"|
+                        items_modificado$size=="M ( 40 )"&
+                        items_modificado$category == 7] = "M"
+
+items_modificado$size[items_modificado$size =="02 Senior"|
+                        items_modificado$size =="10 (36-40)"|
+                        items_modificado$size =="152"|
+                        items_modificado$size =="2 ( 152 )"|
+                        items_modificado$size =="2 ( Senior )"|
+                        items_modificado$size =="4 ( 39-42 )"|
+                        items_modificado$size =="4 ( 43-45 )"|
+                        items_modificado$size =="4 ( 43-46 )"|
+                        items_modificado$size =="4 ( 44-46 )"|
+                        items_modificado$size =="41 - 44"|
+                        items_modificado$size =="46"|
+                        items_modificado$size =="5"|
+                        items_modificado$size =="L"|
+                        items_modificado$size =="L ( 152-158 )"|
+                        items_modificado$size =="L ( 40/42 )"|
+                        items_modificado$size =="L ( 42-46 )"|
+                        items_modificado$size =="L ( 42-47 )"|
+                        items_modificado$size =="L/K"|
+                        items_modificado$size =="L/T"|
+                        items_modificado$size =="L/XL ( 39-47 )"&
+                        items_modificado$category == 7] = "L"
+
+items_modificado$size[items_modificado$size =="12 (41-45)"|
+                        items_modificado$size =="14 (164)"|
+                        items_modificado$size =="14/16 (164-176)"|
+                        items_modificado$size =="158"|
+                        items_modificado$size =="164"|
+                        items_modificado$size =="3 ( 164 )"|
+                        items_modificado$size =="43-46"|
+                        items_modificado$size =="5 ( 43-46 )"|
+                        items_modificado$size =="5 ( 46-48 )"|
+                        items_modificado$size =="5 ( 47-49 )"|
+                        items_modificado$size =="6"|
+                        items_modificado$size =="7"|
+                        items_modificado$size =="7 ( L )"|
+                        items_modificado$size =="XL"|
+                        items_modificado$size =="XL ( 158-170 )"|
+                        items_modificado$size =="XL ( 44/46 )"|
+                        items_modificado$size =="XL (46-48,5)"|
+                        items_modificado$size =="XL (46-50 )"|
+                        items_modificado$size =="XL/T"&
+                        items_modificado$category == 7] = "XL"
+
+items_modificado$size[items_modificado$size =="14 (46-48)"|
+                        items_modificado$size =="16 (176)"|
+                        items_modificado$size =="176"|
+                        items_modificado$size =="28 (3XL)"|
+                        items_modificado$size =="2XL"|
+                        items_modificado$size =="2XL/T"|
+                        items_modificado$size =="30 (5XL)"|
+                        items_modificado$size =="3XL"|
+                        items_modificado$size =="3XL/T"|
+                        items_modificado$size =="45-48"|
+                        items_modificado$size =="45 - 47"|
+                        items_modificado$size =="4XL"|
+                        items_modificado$size =="6 ( 47-50 )"|
+                        items_modificado$size =="8"|
+                        items_modificado$size =="8 ( XL )"|
+                        items_modificado$size =="9"&
+                        items_modificado$mainCategory == 1 &
+                        items_modificado$category == 7] = "XXL"                        
+#Categoria 1-37  
+
+items_modificado$size[items_modificado$size <= 34 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 1] = "XS"
+  
+
+items_modificado$size[items_modificado$size >= 35 &
+                        items_modificado$size <= 36 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 1] = "S"
+
+items_modificado$size[items_modificado$size > 36 & 
+                        items_modificado$size <= 38 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 1] = "M"
+
+items_modificado$size[items_modificado$size > 38 & 
+                        items_modificado$size <= 39 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 1] = "L"
+
+items_modificado$size[items_modificado$size > 39 & 
+                        items_modificado$size <= 40 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 1] = "XL"
+
+items_modificado$size[items_modificado$size > 40 &
+                        items_modificado$size <= 42 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 1] = "XXL"
+
+#Categoria 10  
+
+items_modificado$size[items_modificado$size =="34"|
+                        items_modificado$size =="36"|
+                        items_modificado$size =="35/38"|
+                        items_modificado$size =="S"|
+                        items_modificado$size =="S ( 128-140 )"|
+                        items_modificado$size =="S ( 34-38 )"&
+                        items_modificado$category == 10] = "S"
+
+items_modificado$size[items_modificado$size =="38"|
+                        items_modificado$size =="40"|
+                        items_modificado$size =="42"|
+                        items_modificado$size =="3 ( 40-42 )"|
+                        items_modificado$size =="35 - 38"|
+                        items_modificado$size =="39 - 42"|
+                        items_modificado$size =="39/42"|
+                        items_modificado$size =="M"|
+                        items_modificado$size =="M ( 140-152 )"|
+                        items_modificado$size =="M ( 38/40 )"|
+                        items_modificado$size =="M ( 38-42 )"|
+                        items_modificado$size =="M ( 40 )"|
+                        items_modificado$size =="M (38 - 42)"&
+                        items_modificado$category == 10] = "M"
+
+items_modificado$size[items_modificado$size =="4 ( 43-45 )"|
+                        items_modificado$size =="43/46"|
+                        items_modificado$size =="L"|
+                        items_modificado$size =="L ( 152-158 )"|
+                        items_modificado$size =="L ( 40/42 )"|
+                        items_modificado$size =="L ( 42-46 )"|
+                        items_modificado$size =="L ( 44 )"|
+                        items_modificado$size =="L (43 - 46)"&
+                        items_modificado$category == 10] = "L"
+
+items_modificado$size[items_modificado$size =="2XL"|
+                        items_modificado$size =="43 - 46"|
+                        items_modificado$size =="47 - 50"|
+                        items_modificado$size =="47/49"&
+                        items_modificado$category == 10] = "XL"
+
+#Categoria 18 
+
+items_modificado$size[items_modificado$size < 39 &
+                        items_modificado$category == 18] = "XS"
+
+
+items_modificado$size[items_modificado$size >= 39 &
+                        items_modificado$size < 42 &
+                        items_modificado$category == 18] = "S"
+
+items_modificado$size[items_modificado$size >= 42 & 
+                        items_modificado$size <= 45 &
+                        items_modificado$category == 18] = "M"
+
+items_modificado$size[items_modificado$size > 45 & 
+                        items_modificado$size <= 46 &
+                        items_modificado$category == 18] = "L"
+
+items_modificado$size[items_modificado$size > 46 & 
+                        items_modificado$size <= 47 &
+                        items_modificado$category == 18] = "XL"
+
+items_modificado$size[items_modificado$size > 47 &
+                        items_modificado$size <= 49 & 
+                        items_modificado$category == 18] = "XXL"
+  
+  
+#Categoria 36
+
+items_modificado$size[items_modificado$size < 36 &
+                        items_modificado$category == 36] = "XS"
+
+
+items_modificado$size[items_modificado$size >= 36 &
+                        items_modificado$size < 38 &
+                        items_modificado$category == 36] = "S"
+
+items_modificado$size[items_modificado$size >= 38 & 
+                        items_modificado$size <= 40 &
+                        items_modificado$category == 36] = "M"
+
+items_modificado$size[items_modificado$size > 40 & 
+                        items_modificado$size <= 41 &
+                        items_modificado$category == 36] = "L"
+
+items_modificado$size[items_modificado$size > 41 & 
+                        items_modificado$size <= 43 &
+                        items_modificado$category == 36] = "XL"
+
+items_modificado$size[items_modificado$size > 43 &
+                        items_modificado$size <= 45 &
+                        items_modificado$category == 36] = "XXL"  
+
+#Categoria 9-37  
+
+items_modificado$size[items_modificado$size <= 34 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 9] = "XS"
+
+
+items_modificado$size[items_modificado$size >= 35 &
+                        items_modificado$size <= 36 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 9] = "S"
+
+items_modificado$size[items_modificado$size > 36 & 
+                        items_modificado$size <= 38 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 9] = "M"
+
+items_modificado$size[items_modificado$size > 38 & 
+                        items_modificado$size <= 39 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 9] = "L"
+
+items_modificado$size[items_modificado$size > 39 & 
+                        items_modificado$size <= 40 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 9] = "XL"
+
+items_modificado$size[items_modificado$size > 40 &
+                        items_modificado <= 42 &
+                        items_modificado$category == 37 &
+                        items_modificado$mainCategory == 9] = "XXL"
+
+#Categoria 16 
+
+items_modificado$size[items_modificado$size =="116/128"|
+                        items_modificado$size =="XS"|
+                        items_modificado$size =="XS ( 116-128 )"|
+                        items_modificado$size =="XS ( 32/34 )"|
+                        items_modificado$size =="XS/S"&
+                        items_modificado$category == 16] = "XS"
+
+
+items_modificado$size[items_modificado$size =="128"|
+                        items_modificado$size =="S"|
+                        items_modificado$size =="S ( 128-140 )"|
+                        items_modificado$size =="S ( 34/36 )"|
+                        items_modificado$size =="YSM 125-135"&
+                        items_modificado$category == 16] = "S"
+
+items_modificado$size[items_modificado$size =="140"|
+                        items_modificado$size =="140/152"|
+                        items_modificado$size =="M"|
+                        items_modificado$size =="M ( 140-152 )"|
+                        items_modificado$size =="M ( 38/40 )"|
+                        items_modificado$size =="M/L"|
+                        items_modificado$size =="YM 135-147,5"&
+                        items_modificado$category == 16] = "M"
+
+
+items_modificado$size[items_modificado$size =="152"|
+                        items_modificado$size =="L"|
+                        items_modificado$size =="L ( 152-158 )"|
+                        items_modificado$size =="YLG 147,5-157,5"&
+                        items_modificado$category == 16] = "L"
+
+
+items_modificado$size[items_modificado$size =="164"|
+                        items_modificado$size =="164/176"|
+                        items_modificado$size =="XL"|
+                        items_modificado$size =="XL ( 158-170 )"|
+                        items_modificado$size =="XL ( 44/46 )"|
+                        items_modificado$size =="YXL 157,5-167,5"&
+                        items_modificado$category == 16] = "XL"
+
+items_modificado$size[items_modificado$size =="176"|
+                        items_modificado$size =="2XL"&
+                        items_modificado$category == 16] = "XXL"
+
+#Categoria 24
+items_modificado$size[items_modificado$size =="XS ( 116-128 )"|
+                        items_modificado$size =="XS ( 32/34 )"&
+                        items_modificado$category == 24] = "XS"
+
+items_modificado$size[items_modificado$size =="128"|
+                        items_modificado$size =="S"|
+                        items_modificado$size =="S ( 128-140 )"|
+                        items_modificado$size =="S ( 34/36 )"&
+                        items_modificado$category == 24] = "S"
+
+items_modificado$size[items_modificado$size =="140"|
+                        items_modificado$size =="M"|
+                        items_modificado$size =="M ( 140-152 )"|
+                        items_modificado$size =="M ( 38/40 )"|
+                        items_modificado$size =="M ( 40 )"&
+                        items_modificado$category == 24] = "M"
+
+items_modificado$size[items_modificado$size =="152"|
+                        items_modificado$size =="L"|
+                        items_modificado$size =="L ( 152-158 )"|
+                        items_modificado$size =="L ( 40/42 )"&
+                        items_modificado$category == 24] = "L"
+
+items_modificado$size[items_modificado$size =="164"|
+                        items_modificado$size =="XL"|
+                        items_modificado$size =="XL ( 158-170 )"|
+                        items_modificado$size =="XL ( 44/46 )"|
+                        items_modificado$size =="YXL 157,5-167,5"&
+                        items_modificado$category == 24] = "XL"
+
+items_modificado$size[items_modificado$size =="176"|
+                        items_modificado$size =="2XL"&
+                        items_modificado$category == 24] = "XXL"
+
+#Categoria 30
+
+items_modificado$size[items_modificado$size =="XS ( 32/34 )"&
+                      items_modificado$category == 30] = "XS"
+
+items_modificado$size[items_modificado$size =="S"|
+                        items_modificado$size =="S ( 34/36 )"|
+                        items_modificado$size =="S ( 36 )"&
+                        items_modificado$category == 30] = "S"
+
+items_modificado$size[items_modificado$size =="M"|
+                        items_modificado$size =="M ( 38/40 )"&
+                        items_modificado$category == 30] = "M"
+
+items_modificado$size[items_modificado$size =="L"|
+                        items_modificado$size =="L ( 40/42 )"&
+                        items_modificado$category == 30] = "L"
+
+#Categoria 33
+
+items_modificado$size[items_modificado$size =="XS ( 116-128 )"&
+                        items_modificado$category == 33] = "XS"
+
+items_modificado$size[items_modificado$size =="128"|
+                        items_modificado$size =="S"|
+                        items_modificado$size =="S ( 128-140 )"|
+                        items_modificado$size =="YSM 125-135"&
+                        items_modificado$category == 33] = "S"
+
+items_modificado$size[items_modificado$size =="140"|
+                        items_modificado$size =="140/152"|
+                        items_modificado$size =="M"|
+                        items_modificado$size =="M ( 140-152 )"&
+                        items_modificado$category == 33] = "M"
+
+items_modificado$size[items_modificado$size =="152"|
+                        items_modificado$size =="L"|
+                        items_modificado$size =="L ( 152-158 )"|
+                        items_modificado$size =="L ( 40/42 )"|
+                        items_modificado$size =="YLG 147,5-157,5"&
+                        items_modificado$category == 33] = "L"
+
+items_modificado$size[items_modificado$size =="164"|
+                        items_modificado$size =="164/176"|
+                        items_modificado$size =="XL"|
+                        items_modificado$size =="XL ( 158-170 )"&
+                        items_modificado$category == 33] = "XL"
+
+items_modificado$size[items_modificado$size =="176"|
+                        items_modificado$size =="2XL"|
+                        items_modificado$size =="3XL"&
+                        items_modificado$category == 33] = "XXL"
