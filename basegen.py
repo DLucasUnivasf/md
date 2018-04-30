@@ -3,13 +3,14 @@ from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.feature_extraction.text import CountVectorizer
 from datetime import datetime, timedelta
 from calendar import monthrange
+from collections import Counter
 import pandas as pd
 import numpy as np
 import statistics as st
 import copy
 
-last_date_train = datetime(2017, 12, 31)
-last_date_test = datetime(2018, 1, 31)
+last_date_train = datetime(2017, 1, 31)
+# last_date_test = datetime(2018, 1, 31)
 
 csv_data_folder = '.\\csv_data\\'
 items_csv_data = '.\\itemsResolved.csv'
@@ -18,7 +19,7 @@ train_csv_data = '.\\train.csv'
 
 def main():
 
-	items_data = pd.read_csv(items_csv_data, sep=',')
+	items_data = pd.read_csv(items_csv_data, sep=';')
 	prices_data = pd.read_csv(prices_csv_data, sep='|')	
 	train_data = pd.read_csv(train_csv_data, sep='|')
 
@@ -27,23 +28,40 @@ def main():
 		release_dates[i] = datetime.strptime(release_dates[i], "%Y-%m-%d")
 
 	items_data['releaseDate'] = release_dates
-	train_results = get_results(train_data, [last_date_train.month, last_date_train.month-1, last_date_train.month-2])
-
+	
+	train_results = get_results(train_data, [last_date_train.month, last_date_train.month-1, last_date_train.month-2, last_date_train.month-3])
 	items_data = treat_subCategory(items_data)
+	items_data = vectorize_features(items_data)
 
-	vect_color = get_feature_vectorizer(items_data, 'color')
-	vect_brand = get_feature_vectorizer(items_data, 'brand')
-	vect_mainC = get_feature_vectorizer(items_data, 'mainCategory')
-	vect_category = get_feature_vectorizer(items_data, 'category')
-	items_data = vectorize_feature(items_data, 'color', vect_color)
-	items_data = vectorize_feature(items_data, 'brand', vect_brand)
-	items_data = vectorize_feature(items_data, 'mainCategory', vect_mainC)
-	items_data = vectorize_feature(items_data, 'category', vect_category)
-
-	items_data = items_data.drop(columns = ['color', 'brand', 'mainCategory', 'category'])
-
-	# consertar size
 	generate_base(release_dates, items_data, train_data, last_date_train, train_results, prices_data)
+
+
+def vectorize_features(items_data):
+	df = items_data[['category']]
+	df = df.astype(str)
+	dummies = pd.get_dummies(df)
+	print(dummies)
+
+	vect_columns = ['color', 'brand']
+	for i in range(0, len(vect_columns)):
+		aux_df = items_data[[vect_columns[i]]]
+		dummies = pd.get_dummies(aux_df)	
+		items_data = items_data.join(dummies)
+		items_data = items_data.drop(columns = [vect_columns[i]])	
+
+	aux_df = items_data[['size']]
+	dummies = pd.get_dummies(aux_df)	
+	items_data = items_data.join(dummies)
+
+	vect_columns = ['category', 'mainCategory']
+	for i in range(0, len(vect_columns)):
+		aux_df = items_data[[vect_columns[i]]]
+		aux_df = aux_df.astype(str)
+		dummies = pd.get_dummies(aux_df)	
+		items_data = items_data.join(dummies)
+		items_data = items_data.drop(columns = [vect_columns[i]])
+
+	return items_data
 
 def generate_base(release_dates, items_data, train_data, last_date, results, prices_data):
 
@@ -102,20 +120,20 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 			d['price'] = price
 			d['price_rrp'] = price_rrp
 			d['max_rrp'] = max_rrp
-			# consertar size
 			d['target'] = search_results(current_datetime, d['pid'], d['size'], results)
 
 			data.append(d, ignore_index=True)
 
-	vect_weekday = get_feature_vectorizer(data, 'weekday')
-	vect_weeknumber = get_feature_vectorizer(data, 'weeknumber')
-	data = vectorize_feature(data, 'weekday', vect_weekday)
-	data = vectorize_feature(data, 'weeknumber', vect_weeknumber)
-	data = data.drop(columns = ['weekday', 'weeknumber'])
+	vect_columns = ['weeknumber', 'weekday']
+	for i in range(0, len(vect_columns)):
+		aux_df = items_data[[vect_columns[i]]]
+		aux_df = aux_df.astype(str)
+		dummies = pd.get_dummies(aux_df)	
+		items_data = items_data.join(dummies)
+	data = data.drop(columns = ['size', 'weekday', 'weeknumber'])
 
-	data.to_csv(".\\" + "_trainResolved.csv", sep='\t', index=False)
+	data.to_csv(".\\" + "new_data.csv", sep='|', index=False)
 
-# consertar size !!!
 def search_results(date, pid, size, results):
 	for i in range(0, len(results)):
 		if (datetime.strptime(results[i]['date'], "%Y-%m-%d") == date and results[i]['pid'] == pid and results[i]['size'] == size):
