@@ -79,6 +79,7 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 	column_names.append('age')
 	column_names.append('weekday')
 	column_names.append('weeknumber')
+	column_names.append('month')
 	column_names.append('price')
 	column_names.append('price_rrp')
 	column_names.append('max_rrp')
@@ -111,6 +112,7 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 
 			weekday = current_datetime.weekday()
 			age = (current_datetime - release_dates[i]).days
+			month = current_datetime.month
 			day = current_datetime.day
 			if (day >= 1 and day <= 7): 
 				weeknumber = 1
@@ -128,6 +130,7 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 			d['age'].append(age)
 			d['weekday'].append(weekday)
 			d['weeknumber'].append(weeknumber)
+			d['month'].append(month)
 			d['price'].append(price)
 			d['price_rrp'].append(price_rrp)
 			d['max_rrp'].append(max_rrp)
@@ -140,13 +143,13 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 	for column in column_names:
 		data[column] = d[column]
 
-	vect_columns = ['weeknumber', 'weekday']
+	vect_columns = ['weeknumber', 'weekday', 'month']
 	for j in range(0, len(vect_columns)):
 		aux_df = data[[vect_columns[j]]]
 		aux_df = aux_df.astype(str)
 		dummies = pd.get_dummies(aux_df)	
 		data = data.join(dummies)
-	data = data.drop(columns = ['size', 'weekday', 'weeknumber'])
+	data = data.drop(columns = ['size', 'weekday', 'weeknumber', 'month'])
 
 	data.to_csv(".\\" + "new_data.csv", sep='|', index=False)
 	# return data
