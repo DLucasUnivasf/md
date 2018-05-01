@@ -9,7 +9,7 @@ import numpy as np
 import statistics as st
 import copy
 
-last_date_train = datetime(2017, 1, 31)
+last_date_train = datetime(2017, 10, 2)
 # last_date_test = datetime(2018, 1, 31)
 
 csv_data_folder = '.\\csv_data\\'
@@ -27,20 +27,22 @@ def main():
 	for i in range(0, len(release_dates)):
 		release_dates[i] = datetime.strptime(release_dates[i], "%Y-%m-%d")
 
+	# items_data = items_data.drop(columns = 'releaseDate')
 	items_data['releaseDate'] = release_dates
 	
 	train_results = get_results(train_data, [last_date_train.month, last_date_train.month-1, last_date_train.month-2, last_date_train.month-3])
 	items_data = treat_subCategory(items_data)
 	items_data = vectorize_features(items_data)
 
-	generate_base(release_dates, items_data, train_data, last_date_train, train_results, prices_data)
+	data = generate_base(release_dates, items_data, train_data, last_date_train, train_results, prices_data)
 
+	# train(data)
 
 def vectorize_features(items_data):
 	df = items_data[['category']]
 	df = df.astype(str)
 	dummies = pd.get_dummies(df)
-	print(dummies)
+	# print(dummies)
 
 	vect_columns = ['color', 'brand']
 	for i in range(0, len(vect_columns)):
@@ -65,13 +67,14 @@ def vectorize_features(items_data):
 
 def generate_base(release_dates, items_data, train_data, last_date, results, prices_data):
 
-	d = dict()
+	ctr = 0
 	column_names = list()
 
 	for column in items_data.columns:
 		column_names.append(column)
 
 	n = len(column_names)
+	d = dict()
 
 	column_names.append('age')
 	column_names.append('weekday')
@@ -81,9 +84,18 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 	column_names.append('max_rrp')
 	column_names.append('target')
 
+	for column in column_names:
+		d[column] = list()
+
+	# with open('test.csv', 'w') as f:
+
+	# 	for column in column_names:
+	# 		f.write("%s|" % column)
+	# 	f.write("\n")
+
 	data = pd.DataFrame(columns = column_names)
 
-	for i in range(0, len(release_dates)):
+	for i in range(0, int(len(release_dates)/6000)):
 		print(str(i))
 		items = items_data.iloc[i]
 		prices = prices_data.iloc[i]
@@ -91,14 +103,14 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 		max_value = max(max_value[2:])
 		max_rrp = max_value/items.loc['rrp']
 
-		for i in range(0, n):
-			d[column_names[i]] = items.loc[column_names[i]]
+		for j in range(0, n):
+			d[column_names[j]].append(items.loc[column_names[j]])
 
 		for current_datetime in date_range(release_dates[i], last_date):
 			print(current_datetime)
+
 			weekday = current_datetime.weekday()
 			age = (current_datetime - release_dates[i]).days
-
 			day = current_datetime.day
 			if (day >= 1 and day <= 7): 
 				weeknumber = 1
@@ -113,26 +125,31 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 
 			price = prices.loc[current_datetime.strftime("%Y-%m-%d")]
 			price_rrp = price/items.loc['rrp']
+			d['age'].append(age)
+			d['weekday'].append(weekday)
+			d['weeknumber'].append(weeknumber)
+			d['price'].append(price)
+			d['price_rrp'].append(price_rrp)
+			d['max_rrp'].append(max_rrp)
+			d['target'].append(search_results(current_datetime, d['pid'][ctr], d['size'][ctr], results))
 
-			d['age'] = age
-			d['weekday'] = weekday
-			d['weeknumber'] = weeknumber
-			d['price'] = price
-			d['price_rrp'] = price_rrp
-			d['max_rrp'] = max_rrp
-			d['target'] = search_results(current_datetime, d['pid'], d['size'], results)
-
-			data.append(d, ignore_index=True)
+			# for key in d:
+			# 	f.write("%s|" % d[key])
+			# f.write("\n")
+			
+	for column in column_names:
+		data[column] = d[column]
 
 	vect_columns = ['weeknumber', 'weekday']
-	for i in range(0, len(vect_columns)):
-		aux_df = items_data[[vect_columns[i]]]
+	for j in range(0, len(vect_columns)):
+		aux_df = data[[vect_columns[j]]]
 		aux_df = aux_df.astype(str)
 		dummies = pd.get_dummies(aux_df)	
-		items_data = items_data.join(dummies)
+		data = data.join(dummies)
 	data = data.drop(columns = ['size', 'weekday', 'weeknumber'])
 
 	data.to_csv(".\\" + "new_data.csv", sep='|', index=False)
+	# return data
 
 def search_results(date, pid, size, results):
 	for i in range(0, len(results)):
@@ -168,11 +185,6 @@ def get_results(train_data, month):
 	dates = train_data['date'].tolist()
 	test_results = list()
 
-	# if(isinstance(month, int)):
-	# 	for i in range(0, len(dates)):
-	# 		if (datetime.strptime(dates[i], "%Y-%m-%d").month == month):
-	# 			test_results.append(train_data.iloc[i])
-	# else:
 	for i in range(0, len(dates)):
 		for m in month:
 			if (datetime.strptime(dates[i], "%Y-%m-%d").month == m):
@@ -185,35 +197,21 @@ def date_range(start_date, end_date):
     for n in range(int ((end_date - start_date).days)):
         yield start_date + timedelta(n)
 
-def get_feature_vectorizer(train_data, feature_name):
-	all_feature_values = list()
-	
-	feature_lines = train_data[feature_name].tolist()
-	for feature_line in feature_lines:
-		if (feature_line == feature_line):
-			features =  feature_line.split(',')
-			for feature in features:
-				all_feature_values.append(feature)
+def train(data):
+	n_columns = len(data.columns)
+	X_train = data[0:n_columns-1]
+	Y_train = data['target']
 
-	temp_vectorizer = CountVectorizer()
-	temp_vectorizer.fit(all_feature_values)
-	return temp_vectorizer
+	rf_model = RandomForestClassifier(n_estimators = 100, n_jobs = 7)
+	score = cross_val_score(rf_model, X_train, Y_train, cv=6, scoring='roc_auc')
+	print('roc area: ' + str(score.mean()))
 
-def vectorize_feature(data, feature_name, vectorizer_feature):
-	pos = data.columns.get_loc(feature_name)
-	features_list = data[feature_name].tolist()
-	for feature_line in features_list:
-		feature_line = feature_line.split(',')
 
-	new_feature_names = list()
-	for old_feature_name in vectorizer_feature.get_feature_names():
-		new_feature_names.append(feature_name + '_' + old_feature_name)
+def test(model, new_test, test_results):
+	n_columns = len(new_test.columns)
+	X_test = new_test[0:n_columns-1]
 
-	new_features_mtx = vectorizer_feature.transform(features_list).toarray()
-	new_df = pd.DataFrame(new_features_mtx, columns=new_feature_names)
+	Y_test = model.predict(X_test)
+	print(accuracy_score(test_results, Y_test))
 
-	for idx in range(pos, len(new_feature_names)+pos):
-		data.insert(loc = idx, column = new_feature_names[idx-pos], value = list(new_features_mtx[:,idx-pos]))
-
-	return data
 main()
