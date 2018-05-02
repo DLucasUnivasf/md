@@ -104,11 +104,11 @@ def generate_base(release_dates, items_data, train_data, last_date, prices_data,
 		max_value = max(max_value[2:])
 		max_rrp = max_value/items.loc['rrp']
 
-		for j in range(0, n):
-			d[column_names[j]].append(items.loc[column_names[j]])
-
 		for current_datetime in date_range(release_dates[i], last_date):
 			# print(current_datetime)
+
+			for j in range(0, n):
+				d[column_names[j]].append(items.loc[column_names[j]])
 
 			weekday = current_datetime.weekday()
 			age = (current_datetime - release_dates[i]).days
@@ -140,9 +140,6 @@ def generate_base(release_dates, items_data, train_data, last_date, prices_data,
 			# 	f.write("%s|" % d[key])
 			# f.write("\n")
 			
-	print(len(d.columns))
-	print(len(data.columns))
-
 	for column in column_names:
 		data[column] = d[column]
 
