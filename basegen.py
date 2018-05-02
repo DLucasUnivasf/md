@@ -13,6 +13,7 @@ last_date_train = datetime(2018, 2, 28)
 # last_date_test = datetime(2018, 1, 31)
 
 csv_data_folder = '.\\csv_data\\'
+old_items_csv_data = '.\\items.csv'
 items_csv_data = '.\\itemsResolved.csv'
 prices_csv_data = '.\\prices.csv'
 train_csv_data = '.\\train.csv'
@@ -20,8 +21,9 @@ train_csv_data = '.\\train.csv'
 def main():
 
 	items_data = pd.read_csv(items_csv_data, sep=';')
+	old_items_data = pd.read_csv(old_items_csv_data, sep='|')
 	prices_data = pd.read_csv(prices_csv_data, sep='|')	
-	train_data = pd.read_csv(train_csv_data, sep='|')
+	train_data = pd.read_csv(train_csv_data, sep='|')	
 
 	release_dates = items_data['releaseDate'].tolist()
 	for i in range(0, len(release_dates)):
@@ -32,38 +34,13 @@ def main():
 	
 	train_results = get_train_data(train_data)
 	items_data = treat_subCategory(items_data)
-	items_data = vectorize_features(items_data)
+	items_data['old_size'] = old_items_data['size']
+
+	# items_data = vectorize_features(items_data, old_items_data)
 
 	data = generate_base(release_dates, items_data, train_data, last_date_train, prices_data, train_results)
 
 	# train(data)
-
-def vectorize_features(items_data):
-	df = items_data[['category']]
-	df = df.astype(str)
-	dummies = pd.get_dummies(df)
-	# print(dummies)
-
-	vect_columns = ['color', 'brand']
-	for i in range(0, len(vect_columns)):
-		aux_df = items_data[[vect_columns[i]]]
-		dummies = pd.get_dummies(aux_df)	
-		items_data = items_data.join(dummies)
-		items_data = items_data.drop(columns = [vect_columns[i]])	
-
-	aux_df = items_data[['size']]
-	dummies = pd.get_dummies(aux_df)	
-	items_data = items_data.join(dummies)
-
-	vect_columns = ['category', 'mainCategory']
-	for i in range(0, len(vect_columns)):
-		aux_df = items_data[[vect_columns[i]]]
-		aux_df = aux_df.astype(str)
-		dummies = pd.get_dummies(aux_df)	
-		items_data = items_data.join(dummies)
-		items_data = items_data.drop(columns = [vect_columns[i]])
-
-	return items_data
 
 def generate_base(release_dates, items_data, train_data, last_date, prices_data, train_results):
 
@@ -89,9 +66,8 @@ def generate_base(release_dates, items_data, train_data, last_date, prices_data,
 		d[column] = list()
 
 	# with open('test.csv', 'w') as f:
-
-	# 	for column in column_names:
-	# 		f.write("%s|" % column)
+	# 	for row in items_data:
+	# 		f.write(row)
 	# 	f.write("\n")
 
 	data = pd.DataFrame(columns = column_names)
@@ -134,7 +110,7 @@ def generate_base(release_dates, items_data, train_data, last_date, prices_data,
 			d['price'].append(price)
 			d['price_rrp'].append(price_rrp)
 			d['max_rrp'].append(max_rrp)
-			d['target'].append(search_results(current_datetime.strftime("%Y-%m-%d"), d['pid'][ctr], d['size'][ctr], train_results))
+			d['target'].append(search_results(current_datetime.strftime("%Y-%m-%d"), d['pid'][ctr], d['old_size'][ctr], train_results))
 
 			# for key in d:
 			# 	f.write("%s|" % d[key])
@@ -143,13 +119,20 @@ def generate_base(release_dates, items_data, train_data, last_date, prices_data,
 	for column in column_names:
 		data[column] = d[column]
 
-	vect_columns = ['weeknumber', 'weekday', 'month']
+	vect_columns = ['weekday', 'weeknumber', 'month', 'category', 'mainCategory']
 	for j in range(0, len(vect_columns)):
 		aux_df = data[[vect_columns[j]]]
 		aux_df = aux_df.astype(str)
-		dummies = pd.get_dummies(aux_df)	
+		dummies = pd.get_dummies(aux_df)
 		data = data.join(dummies)
-	data = data.drop(columns = ['size', 'weekday', 'weeknumber', 'month'])
+
+	vect_columns = ['color', 'brand', 'size', 'old_size']
+	for j in range(0, len(vect_columns)):
+		aux_df = data[[vect_columns[j]]]
+		dummies = pd.get_dummies(aux_df)
+		data = data.join(dummies)
+
+	data = data.drop(columns = ['weekday', 'weeknumber', 'month', 'category', 'mainCategory', 'color', 'brand', 'size', 'old_size'])
 
 	data.to_csv(".\\" + "new_data.csv", sep='|', index=False)
 	# return data
@@ -204,7 +187,6 @@ def get_train_data(train_data):
 			dict_to_return[date_loucura][pids[i]][sizes[i]] = 1
 
 	return dict_to_return
-
 
 def date_range(start_date, end_date):
     for n in range(int ((end_date - start_date).days)):
