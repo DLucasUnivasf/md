@@ -9,7 +9,7 @@ import numpy as np
 import statistics as st
 import copy
 
-last_date_train = datetime(2017, 10, 2)
+last_date_train = datetime(2018, 2, 28)
 # last_date_test = datetime(2018, 1, 31)
 
 csv_data_folder = '.\\csv_data\\'
@@ -30,11 +30,11 @@ def main():
 	# items_data = items_data.drop(columns = 'releaseDate')
 	items_data['releaseDate'] = release_dates
 	
-	train_results = get_results(train_data, [last_date_train.month, last_date_train.month-1, last_date_train.month-2, last_date_train.month-3])
+	train_results = get_train_data(train_data)
 	items_data = treat_subCategory(items_data)
 	items_data = vectorize_features(items_data)
 
-	data = generate_base(release_dates, items_data, train_data, last_date_train, train_results, prices_data)
+	data = generate_base(release_dates, items_data, train_data, last_date_train, prices_data, train_results)
 
 	# train(data)
 
@@ -65,7 +65,7 @@ def vectorize_features(items_data):
 
 	return items_data
 
-def generate_base(release_dates, items_data, train_data, last_date, results, prices_data):
+def generate_base(release_dates, items_data, train_data, last_date, prices_data, train_results):
 
 	ctr = 0
 	column_names = list()
@@ -108,7 +108,7 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 			d[column_names[j]].append(items.loc[column_names[j]])
 
 		for current_datetime in date_range(release_dates[i], last_date):
-			print(current_datetime)
+			# print(current_datetime)
 
 			weekday = current_datetime.weekday()
 			age = (current_datetime - release_dates[i]).days
@@ -134,12 +134,15 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 			d['price'].append(price)
 			d['price_rrp'].append(price_rrp)
 			d['max_rrp'].append(max_rrp)
-			d['target'].append(search_results(current_datetime, d['pid'][ctr], d['size'][ctr], results))
+			d['target'].append(search_results(current_datetime.strftime("%Y-%m-%d"), d['pid'][ctr], d['size'][ctr], train_results))
 
 			# for key in d:
 			# 	f.write("%s|" % d[key])
 			# f.write("\n")
 			
+	print(len(d.columns))
+	print(len(data.columns))
+
 	for column in column_names:
 		data[column] = d[column]
 
@@ -154,12 +157,15 @@ def generate_base(release_dates, items_data, train_data, last_date, results, pri
 	data.to_csv(".\\" + "new_data.csv", sep='|', index=False)
 	# return data
 
-def search_results(date, pid, size, results):
-	for i in range(0, len(results)):
-		if (datetime.strptime(results[i]['date'], "%Y-%m-%d") == date and results[i]['pid'] == pid and results[i]['size'] == size):
-			return 1
+def search_results(date_loucura, pid, size, base):
 
-	return 0
+	if date_loucura not in base:
+		return 0
+	if pid not in base[date_loucura]:
+		return 0
+	if size not in base[date_loucura][pid]:
+		return 0
+	return 1
 
 def treat_subCategory(items_data):
 	most_common = [3, 32, 21, 14, 25, 8, 16, 6, 5, 22]
@@ -184,16 +190,23 @@ def treat_subCategory(items_data):
 
 	return items_data
 
-def get_results(train_data, month):
+def get_train_data(train_data):
 	dates = train_data['date'].tolist()
-	test_results = list()
+	pids = train_data['pid'].tolist()
+	sizes = train_data['size'].tolist()
+
+	dict_to_return = dict()
 
 	for i in range(0, len(dates)):
-		for m in month:
-			if (datetime.strptime(dates[i], "%Y-%m-%d").month == m):
-				test_results.append(train_data.iloc[i])
+		date_loucura = datetime.strptime(dates[i], "%Y-%m-%d")
+		if date_loucura not in dict_to_return:
+			dict_to_return[date_loucura] = dict()
+		if pids[i] not in dict_to_return[date_loucura]:
+			dict_to_return[date_loucura][pids[i]] = dict()
+		if sizes[i] not in dict_to_return[date_loucura][pids[i]]:
+			dict_to_return[date_loucura][pids[i]][sizes[i]] = 1
 
-	return test_results
+	return dict_to_return
 
 
 def date_range(start_date, end_date):
