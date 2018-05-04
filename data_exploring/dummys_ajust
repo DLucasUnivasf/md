@@ -1,0 +1,65 @@
+#Transformando variaveis categoricas em 
+library(caret)
+library(dplyr)
+
+#exemplo de como estou transformando em dummyes 
+base_parte_1_dummy = dummyVars(~ size + old_size + color +
+                                 mainCategory + brand + weekday +
+                                 weeknumber + month
+                                 ,data = base_parte_1, levelsOnly = FALSE)
+
+#isso gera um objeto do tipo dummyVars, para extrair um data_frame disso temos que
+exemplo = data.frame(predict(base_parte_1_dummy,newdata = base_parte_1))
+
+#mas isso retorna um data frame apenas com as colunas que especificamos antes, para 
+#adicionar ao data frame original podemos concaternar os dois data frames:
+#exemplo 2 = base_parte_1
+exemplo = cbind(exemplo,exemplo2)
+
+#por fim usamos um select para remover as colunas que não "dummerizadas"
+exemplo = exemplo %>% select(date,pid,size.0...128..:size.YXL.157.5.167.5,units)
+
+
+#juntando dois data frames por linhas 
+exemplo3 = rbind(exemplo,exemplo2)
+
+#tirando os campos desnecessarios da base completa (concatenacao de 1 e 2)
+exemplo3$pid = NULL
+exemplo3$old_size = NULL
+
+#fatorizando os campos int categoricos
+base$category = factor(base$category)
+base$mainCategory = factor(base$mainCategory)
+base$weekday = factor(base$weekday)
+base$weeknumber = factor(base$weeknumber)
+base$month = factor(base$month)
+
+str(base)
+#cuidado com as combinações senão não haverá memoria ram suficiente 
+base_dummy = dummyVars(~ size + color + brand + mainCategory + category + weekday + weeknumber + month,data = base, levelsOnly = FALSE)
+
+#Exportando
+write.table(base_final, file = "C:/Users/daluc/Desktop/base_completa_com_pid.csv", sep = ",", col.names = NA)
+write.table(base_sem_pid, file = "C:/Users/daluc/Desktop/base_completa_sem_pid.csv", sep = ",", col.names = NA)
+write.table(base_janeiro_com_pid, file = "C:/Users/daluc/Desktop/base_janeiro_com_pid.csv", sep = ",", col.names = NA)
+write.table(base_janeiro_sem_pid, file = "C:/Users/daluc/Desktop/base_janeiro_sem_pid.csv", sep = ",", col.names = NA)
+write.table(base_out_dez_com_pid, file = "C:/Users/daluc/Desktop/base_out_dez_com_pid.csv", sep = ",", col.names = NA)
+write.table(base_out_dez_sem_pid, file = "C:/Users/daluc/Desktop/base_out_dez_sem_pid.csv", sep = ",", col.names = NA)
+
+
+#relising date
+Lancamento = filter(base_completa_sem_pid, releaseDate <= "2017-10-01")
+Lancamento = filter(base_completa_sem_pid, releaseDate == "2017-10-01")
+Lancamento = filter(base_completa_sem_pid, releaseDate != "2017-10-01")
+Lancamento = filter(base_completa_sem_pid, releaseDate == "2017-10-01")
+AposLancamento = filter(base_completa_sem_pid, releaseDate != "2017-10-01")
+Lancamento_teste = filter(base_completa_sem_pid, releaseDate == "2017-10-01",month == 1)
+Lancamento_treino = filter(base_completa_sem_pid, releaseDate == "2017-10-01",month != 1)
+AposLancamento_teste = filter(base_completa_sem_pid, releaseDate != "2017-10-01", month == 1)
+AposLancamento_treino = filter(base_completa_sem_pid, releaseDate != "2017-10-01", month != 1)
+
+
+write.table(Lancamento_teste, file = "C:/Users/daluc/Desktop/lancamento_teste.csv", sep = ",", col.names = NA, rol.names = FALSE)
+write.table(Lancamento_treino, file = "C:/Users/daluc/Desktop/lancamento_treino.csv", sep = ",", col.names = NA,rol.name = FALSE)
+write.table(AposLancamento_teste, file = "C:/Users/daluc/Desktop/AposLancamento_teste.csv", sep = ",", col.names = NA,rol.name = FALSE)
+write.table(AposLancamento_treino, file = "C:/Users/daluc/Desktop/AposLancamento_treino.csv", sep = ",", col.names = NA, rol.name = FALSE)
